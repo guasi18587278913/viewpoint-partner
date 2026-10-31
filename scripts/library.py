@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only, network-free retrieval over the current personal reading corpus."""
+"""Read-only retrieval over an explicit Markdown/TXT folder or an optional corpus adapter."""
 import argparse
 import hashlib
 import importlib
@@ -13,9 +13,15 @@ import unicodedata
 from collections import Counter
 from functools import lru_cache
 
-CORPUS_ROOT = Path(os.environ.get("VIEWPOINT_CORPUS_ROOT", str(Path.home() / "projects/KnowledgeBase/personal-reading-wiki"))).expanduser()
-BOOK_ROOT = Path(os.environ.get("VIEWPOINT_BOOK_ROOT", str(Path.home() / "book-rag"))).expanduser()
-PAGE_ROOT = CORPUS_ROOT.parent / "personal-reading-wiki-index/pages"
+def configured_path(name):
+    value = os.environ.get(name, "").strip()
+    return Path(value).expanduser() if value else None
+
+
+FILES_ROOT = configured_path("VIEWPOINT_LIBRARY_DIR")
+CORPUS_ROOT = configured_path("VIEWPOINT_CORPUS_ROOT")
+BOOK_ROOT = configured_path("VIEWPOINT_BOOK_ROOT")
+PAGE_ROOT = configured_path("VIEWPOINT_PAGE_ROOT")
 MAX_READ = 10000
 
 
@@ -40,10 +46,86 @@ def duplicate_key(text):
     return digest(re.sub(r"\s+", "", fold(text)))
 
 
+def file_metadata(content):
+    """Read optional, single-line metadata without interpreting executable YAML."""
+    lines = content.splitlines(keepends=True)
+    metadata_fields = {}
+    body_start = 0
+    if lines and lines[0].strip() == "---":
+        closing = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
+        if closing is None:
+            raise ValueError("文件开头的元数据缺少结束的 ---。")
+        for line in lines[1:closing]:
+            field, separator, value = line.partition(":")
+            if separator and field.strip() in {"title", "author", "date", "source_url", "collection"}:
+                value = value.strip()
+                if not value or value in {"|", ">", "null", "~"}:
+                    raise ValueError("元数据字段 %s 需要一个非空单行值。" % field.strip())
+                if value.startswith('"'):
+                    value = json.loads(value)
+                elif value.startswith("'") and value.endswith("'"):
+                    value = value[1:-1].replace("''", "'")
+                if not isinstance(value, str):
+                    raise ValueError("元数据字段必须是文字。")
+                metadata_fields[field.strip()] = value
+        body_start = closing + 1
+    return metadata_fields, "".join(lines[body_start:]), body_start + 1
+
+
+@lru_cache(maxsize=1)
+def folder_records(root):
+    if root is None:
+        raise RuntimeError("尚未指定资料文件夹。使用 --library /你的资料目录，或设置 VIEWPOINT_LIBRARY_DIR；可先用 --library examples/library 体验合成示例。")
+    root = Path(root).expanduser().resolve(strict=True)
+    if not root.is_dir():
+        raise ValueError("资料路径必须是目录。")
+    records = []
+    def fail_walk(error):
+        raise error
+    for directory, dirs, files in os.walk(root, followlinks=False, onerror=fail_walk):
+        dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d not in {"node_modules", "__pycache__", "venv"})
+        candidates = [Path(directory) / d for d in dirs]
+        candidates += [Path(directory) / f for f in sorted(files)
+                       if not f.startswith(".") and Path(f).suffix.lower() in {".md", ".txt"}]
+        for path in candidates:
+            if path.is_symlink():
+                raise ValueError("资料目录包含符号链接，未读取链接目标：" + str(path.relative_to(root)))
+        for path in candidates[len(dirs):]:
+            if not path.is_file():
+                raise ValueError("资料不是普通文件：" + str(path.relative_to(root)))
+            relative = path.relative_to(root).as_posix()
+            raw = path.read_bytes()
+            try:
+                content = raw.decode("utf-8-sig")
+                fields, body, raw_line = file_metadata(content)
+            except (UnicodeError, ValueError) as exc:
+                raise ValueError("无法读取 %s：请使用 UTF-8 文本和单行元数据（%s）。" % (relative, type(exc).__name__)) from exc
+            if not body.strip():
+                raise ValueError("资料文件正文为空：" + relative)
+            title = fields.get("title")
+            if not title:
+                heading = re.search(r"^#\s+(.+)$", body, re.M)
+                title = heading.group(1).strip() if heading else path.stem
+            file_hash = hashlib.sha256(raw).hexdigest()
+            records.append({"article_id": "file:" + digest(relative)[:24], "title": title,
+                            "author": fields.get("author"),
+                            "author_basis": "file_metadata" if fields.get("author") else "not_provided",
+                            "column": None, "collection": fields.get("collection", path.parent.relative_to(root).as_posix()),
+                            "source_title": relative, "source_url": fields.get("source_url"),
+                            "published_at": fields.get("date"), "article_version": file_hash,
+                            "file_sha256": file_hash, "text": body, "source": "files",
+                            "raw_file": str(path), "raw_line": raw_line})
+    if not records:
+        raise RuntimeError("资料目录没有可读取的 Markdown/TXT 正文；不是没有匹配观点。")
+    return records
+
+
 @lru_cache(maxsize=1)
 def reading_records():
-    if not (CORPUS_ROOT / "src/prw/corpus.py").is_file():
+    if CORPUS_ROOT is None or not (CORPUS_ROOT / "src/prw/corpus.py").is_file():
         raise RuntimeError("阅读库不可用；不是没有匹配观点。检查 VIEWPOINT_CORPUS_ROOT。")
+    if sys.version_info < (3, 10):
+        raise RuntimeError("专用阅读库适配需要 Python 3.10 或以上；通用 --library 模式可使用 Python 3.9。")
     sys.path.insert(0, str(CORPUS_ROOT / "src"))
     module = importlib.import_module("prw.corpus")
     if Path(module.ROOT).resolve() != CORPUS_ROOT.resolve():
@@ -64,6 +146,8 @@ def reading_records():
 
 @lru_cache(maxsize=1)
 def book_records():
+    if BOOK_ROOT is None:
+        raise RuntimeError("书籍适配未配置；请设置 VIEWPOINT_BOOK_ROOT，或使用 --library 读取普通 Markdown/TXT。")
     raw = BOOK_ROOT / "data/raw_texts"
     if not raw.is_dir():
         raise RuntimeError("书籍原文不可用；不是没有匹配观点。检查 VIEWPOINT_BOOK_ROOT。")
@@ -108,11 +192,13 @@ def book_records():
 
 
 def records_for(source):
+    if source == "files":
+        return folder_records(FILES_ROOT)
     return book_records() if source == "books" else reading_records()
 
 
 def get_record(article_id):
-    source = "books" if article_id.startswith("book:") else "reading"
+    source = "files" if article_id.startswith("file:") else "books" if article_id.startswith("book:") else "reading"
     records = records_for(source)
     matches = [a for a in records if a["article_id"] == article_id]
     if not matches and source == "books":
@@ -128,7 +214,7 @@ def metadata(record):
     result = {k: v for k, v in record.items() if k != "text"}
     result["text_sha256"] = digest(record["text"])
     result["total_chars"] = len(record["text"])
-    if record["source"] == "reading":
+    if record["source"] == "reading" and PAGE_ROOT is not None:
         for path in sorted(PAGE_ROOT.glob("*/%s.md" % record["article_id"])):
             # Links to stale material are worse than an explicit article ID.
             if record["text"].strip() in path.read_text(encoding="utf-8"):
@@ -302,11 +388,13 @@ def verify_cards(payload, getter=get_record):
 
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--library", type=Path, help="Explicit folder of UTF-8 Markdown/TXT files; no private corpus required")
     sub = p.add_subparsers(dest="command", required=True)
-    sub.add_parser("status")
+    status = sub.add_parser("status")
+    status.add_argument("--source", choices=["files", "reading", "books"], default="files")
     s = sub.add_parser("search")
     s.add_argument("--query", action="append", required=True)
-    s.add_argument("--source", choices=["reading", "books"], default="reading")
+    s.add_argument("--source", choices=["files", "reading", "books"], default="files")
     s.add_argument("--limit", type=int, default=6)
     s.add_argument("--match", choices=["any", "all"], default="any")
     s.add_argument("--author", default="")
@@ -328,25 +416,24 @@ def parser():
     v.add_argument("--sha256")
     c = sub.add_parser("verify-card")
     c.add_argument("file", type=Path)
+    for command_parser in (status, s, r, v, c):
+        command_parser.add_argument("--library", type=Path, default=argparse.SUPPRESS)
     return p
 
 
 def main():
+    global FILES_ROOT
     args = parser().parse_args()
+    if args.library is not None:
+        FILES_ROOT = args.library
     try:
         if args.command == "status":
-            records = reading_records()
-            try:
-                books = book_records()
-                book_status = {"status": "ok", "page_records": sum(r["page"] is not None for r in books),
-                               "full_books_without_page_markers": [r["collection"] for r in books if r["page"] is None],
-                               "books": len(set(r["collection"] for r in books))}
-            except (OSError, RuntimeError) as exc:
-                book_status = {"status": "unavailable", "error": str(exc)}
+            records = records_for(args.source)
+            root = {"files": FILES_ROOT, "reading": CORPUS_ROOT, "books": BOOK_ROOT}[args.source]
             emit({"status": "ok", "engine": "local_lexical", "network_calls": 0,
-                  "corpus_root": str(CORPUS_ROOT), "article_records": len(records),
-                  "collections": len(set(r["collection"] for r in records)), "optional_books": book_status,
-                  "note": "记录包含书籍和重复来源，不是去重得到篇数，更不是已提取观点数。"})
+                  "source": args.source, "corpus_root": str(root.resolve()), "article_records": len(records),
+                  "collections": len(set(r["collection"] for r in records)),
+                  "note": "记录可能包含重复来源，不是已提取观点数；其他资料源不会自动读取。"})
         elif args.command == "search":
             records = records_for(args.source)
             found = search_records(records, args.query, args.limit, args.match, args.author, args.collection, args.title_only)
@@ -380,11 +467,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # The shipped corpus uses Python 3.10+ annotations. Use its existing venv
-    # instead of installing anything or altering the user's shell configuration.
-    if sys.version_info < (3, 10):
-        interpreter = CORPUS_ROOT / ".venv/bin/python"
-        if interpreter.is_file() and Path(sys.executable).resolve() != interpreter.resolve():
-            os.execv(str(interpreter), [str(interpreter), str(Path(__file__).resolve()), *sys.argv[1:]])
     sys.dont_write_bytecode = True
     raise SystemExit(main())

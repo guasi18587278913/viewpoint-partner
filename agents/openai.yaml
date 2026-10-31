@@ -1,4 +1,4 @@
 interface:
   display_name: "观点搭档"
-  short_description: "从得到文章中寻找有出处的好观点、原话和事例，并匹配当前文本"
-  default_prompt: "用 $viewpoint-partner 从我的得到文章库里，为这段文字寻找适合的观点、原话和事例。"
+  short_description: "从自己的文章与读书笔记中找有出处的观点、原话和事例，支持本地文件夹"
+  default_prompt: "用 $viewpoint-partner 从我指定的资料文件夹里，为这段文字寻找适合的观点、原话和事例。"

@@ -1,0 +1,108 @@
+{
+  "skill": "viewpoint-partner",
+  "date": "2026-10-31",
+  "baseline_commit": "c95881f420024b4d0d2fef76371deee892e9d2b7",
+  "mode": "bundled-local-default-optional-wiki",
+  "validation": {
+    "format_exit": 0,
+    "offline_commands": [
+      {
+        "command": "python3 -B scripts/demo.py",
+        "exit_code": 0
+      },
+      {
+        "command": "python3 -B scripts/library.py --library examples/library status",
+        "exit_code": 0
+      }
+    ],
+    "unit_tests_passed": 35,
+    "unit_tests_failed": 0,
+    "independent_review": "passed",
+    "synthetic_trial": "completed",
+    "trial_summary": "只用指定的两篇合成文件完成 search → read → verify，保留原句、版本、指纹与合成来源身份；没有读取作者的得到库。",
+    "external_services_executed": false
+  },
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "b4260ef4e7955a09c6864754fa9b29f37d91f8fab551580224062574806effc5"
+    },
+    {
+      "path": "README.md",
+      "sha256": "fa843c13688d04f50e05a74f14311f58b9b1338e1466a6c23569cef754480d4e"
+    },
+    {
+      "path": "SKILL.md",
+      "sha256": "01c9114fc64ee871a688cdb950fc013ed324149dd63a0e9665beb1fe6088b569"
+    },
+    {
+      "path": "agents/openai.yaml",
+      "sha256": "fe2450e5883edd70b91f13cc2e597eb6d2c186c1f1f126047685e148a42d888d"
+    },
+    {
+      "path": "docs/portability-validation.md",
+      "sha256": "e1fb057f4ac5c870fcf427b0dbb48b6e615b059a334d285173f8cc6689bc462b"
+    },
+    {
+      "path": "docs/upload-snapshot.json",
+      "sha256": "c54bf982f71d119146a891a430b0df92e97e656ba30977137e29a6266d1b7e7e"
+    },
+    {
+      "path": "evals/report.md",
+      "sha256": "f56c6bf34eb85cc27b66efcb162a1a70e92d1c747ab0e958ed675d039b4ab792"
+    },
+    {
+      "path": "examples/first-run-result.md",
+      "sha256": "44e8dee67ba7fb571d64ca2a783f08c1f3b0dd3e466a0c2134f25e3da72a56c6"
+    },
+    {
+      "path": "examples/first-run.md",
+      "sha256": "d83da08ccfaac97e3a5bb355a9e8d308107988e187c018a8077a42666635867b"
+    },
+    {
+      "path": "examples/library/写作细节.txt",
+      "sha256": "107cead4b94d6a86660f9d246d5ca93fce3c29a96f1565350235741d92c8835d"
+    },
+    {
+      "path": "examples/library/工具选择.md",
+      "sha256": "5dca081464dd9517fd13f9d8f0ae59568448652a8948631edecfd2fb6a196013"
+    },
+    {
+      "path": "references/matching.md",
+      "sha256": "c8e19307cc46ab8986e79a8dcd0ede03a103bcddf50f607461e2a062789d8e2e"
+    },
+    {
+      "path": "references/retrieval.md",
+      "sha256": "134c7f7b7ebb67dbb0ba9014b5374b9ce7ec24e2e60f0b210ff12e4d1d33864a"
+    },
+    {
+      "path": "references/seed-viewpoints.json",
+      "sha256": "e492f73a643bb0c440049c43710f210678736a806b1fdb47416c7fe86850d7cd"
+    },
+    {
+      "path": "references/wiki-guide.md",
+      "sha256": "8e0923181e87ed4d347496ad8cfb50a7c2bddfc96674f9ecea182970442e4b3e"
+    },
+    {
+      "path": "references/wiki-snapshots.json",
+      "sha256": "d0da091353c62212517248b394ab6f0254322f60a084ba411f36cbde2ee7d074"
+    },
+    {
+      "path": "scripts/demo.py",
+      "sha256": "41d5228123df423600053cc3284601b77fc249bdc16978f3fe33807e43f57486"
+    },
+    {
+      "path": "scripts/library.py",
+      "sha256": "e728dd4ce634ecd72638d3b6565bdf70b3be46ba2dc0faa00c81faabe83aa20b"
+    },
+    {
+      "path": "scripts/test_folder_library.py",
+      "sha256": "5ce7daf684beeee5227c9f871ae7357a40d494cbe2ad378607cfa4ab3d27f955"
+    },
+    {
+      "path": "scripts/test_library.py",
+      "sha256": "1781e82248e7bc742533620d970115ca60b400b49b1328a00e646478bb9ddd5a"
+    }
+  ],
+  "manifest_scope": "All distributed files except this manifest; Git commit identifies the complete version."
+}
