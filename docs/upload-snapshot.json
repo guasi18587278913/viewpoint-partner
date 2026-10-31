@@ -1,0 +1,98 @@
+{
+  "skill": "viewpoint-partner",
+  "snapshot_date": "2026-10-31T12:40:50.400837+00:00",
+  "source_kind": "installed local skill",
+  "included_source_files": [
+    {
+      "path": "SKILL.md",
+      "sha256": "99b04741dafb3911d3ba7534e090b49509185275d24c475cce5e61adab74aef9",
+      "bytes": 7979
+    },
+    {
+      "path": "agents/openai.yaml",
+      "sha256": "fa88415beb2d13e8a72f3b4ef789e396f0331ff095af363c8a8ba0465561dde1",
+      "bytes": 284
+    },
+    {
+      "path": "evals/report.md",
+      "sha256": "703acdfde4025900f7f5128d05670da762f5af9381da925d08e02ff11d4aa707",
+      "bytes": 7766,
+      "packaged_sha256": "f56c6bf34eb85cc27b66efcb162a1a70e92d1c747ab0e958ed675d039b4ab792",
+      "packaging_change": "Clarify historical validation and replace links to excluded experiment outputs with archive labels."
+    },
+    {
+      "path": "references/matching.md",
+      "sha256": "c8e19307cc46ab8986e79a8dcd0ede03a103bcddf50f607461e2a062789d8e2e",
+      "bytes": 5347
+    },
+    {
+      "path": "references/retrieval.md",
+      "sha256": "a602667e655cb912de42c72196af876a02175deb0c8bc33cbb51e72b278476cb",
+      "bytes": 7097
+    },
+    {
+      "path": "references/seed-viewpoints.json",
+      "sha256": "e492f73a643bb0c440049c43710f210678736a806b1fdb47416c7fe86850d7cd",
+      "bytes": 13941
+    },
+    {
+      "path": "references/wiki-guide.md",
+      "sha256": "efa6b3dd7ed6ffffafb9ba3be30e10eb43c3aca45352f97d076b03db3825f940",
+      "bytes": 1961
+    },
+    {
+      "path": "references/wiki-snapshots.json",
+      "sha256": "d0da091353c62212517248b394ab6f0254322f60a084ba411f36cbde2ee7d074",
+      "bytes": 35822
+    },
+    {
+      "path": "scripts/library.py",
+      "sha256": "252fef32c33de8eddc0fae93df1887bd3e60d0a9481656d9455d2330b577a83e",
+      "bytes": 19539
+    },
+    {
+      "path": "scripts/test_library.py",
+      "sha256": "1781e82248e7bc742533620d970115ca60b400b49b1328a00e646478bb9ddd5a",
+      "bytes": 9637
+    }
+  ],
+  "excluded_source_files": [
+    {
+      "path": "evals/artifact-hashes.json",
+      "reason": "historical experiment output; may contain local library excerpts or paths"
+    },
+    {
+      "path": "evals/cli-checks.json",
+      "reason": "historical experiment output; may contain local library excerpts or paths"
+    },
+    {
+      "path": "evals/forward-a.md",
+      "reason": "historical experiment output; may contain local library excerpts or paths"
+    },
+    {
+      "path": "evals/forward-b-cards.json",
+      "reason": "historical experiment output; may contain local library excerpts or paths"
+    },
+    {
+      "path": "evals/forward-b.md",
+      "reason": "historical experiment output; may contain local library excerpts or paths"
+    },
+    {
+      "path": "evals/independent-review.md",
+      "reason": "historical experiment output; may contain local library excerpts or paths"
+    },
+    {
+      "path": "evals/scenarios.json",
+      "reason": "historical experiment output; may contain local library excerpts or paths"
+    },
+    {
+      "path": "evals/search-regression.json",
+      "reason": "historical experiment output; may contain local library excerpts or paths"
+    },
+    {
+      "path": "evals/trial-2-2026-10-24.json",
+      "reason": "historical experiment output; may contain local library excerpts or paths"
+    }
+  ],
+  "verification_scope": "Byte-for-byte copy of included source files; no claim of live provider or writing quality validation."
+}
